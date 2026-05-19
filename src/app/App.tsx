@@ -33,7 +33,11 @@ import {
 import { PreviewStack, type PreviewPaneHandle } from "@/modules/preview";
 import { openSettingsWindow } from "@/modules/settings/openSettingsWindow";
 import { usePreferencesStore } from "@/modules/settings/preferences";
-import { SavedConnectionsView } from "@/modules/saved-connections";
+import {
+  SavedConnectionsView,
+  type SshHost,
+  type FavoriteCommand,
+} from "@/modules/saved-connections";
 import {
   ShortcutsDialog,
   useGlobalShortcuts,
@@ -479,6 +483,63 @@ export default function App() {
     [newTab],
   );
 
+  const buildSshCommand = useCallback((host: SshHost): string => {
+    if (host.authType === "password" && host.password) {
+      const escaped = host.password.replace(/'/g, `'\\''`);
+      return `sshpass -p '${escaped}' ssh -o StrictHostKeyChecking=no -p ${host.port} ${host.username}@${host.host}`;
+    }
+    const parts = ["ssh"];
+    parts.push("-o", "StrictHostKeyChecking=no");
+    parts.push("-p", String(host.port));
+    if (host.authType === "key" && host.keyPath) {
+      parts.push("-i", host.keyPath);
+    }
+    parts.push(`${host.username}@${host.host}`);
+    return parts.join(" ");
+  }, []);
+
+  const handleSshConnect = useCallback(
+    (host: SshHost) => {
+      const cmd = buildSshCommand(host);
+      const tabId = newTab();
+      setTimeout(() => {
+        const tab = tabsRef.current.find((x) => x.id === tabId);
+        if (!tab || tab.kind !== "terminal") return;
+        const t = terminalRefs.current.get(tab.activeLeafId);
+        if (!t) return;
+        t.write(`${cmd}\r`);
+        t.focus();
+      }, 80);
+    },
+    [newTab, buildSshCommand],
+  );
+
+  const handleRunCommand = useCallback(
+    (cmd: FavoriteCommand) => {
+      const active = tabsRef.current.find((t) => t.id === activeId);
+      const leafId =
+        active?.kind === "terminal" ? active.activeLeafId : null;
+      if (leafId !== null) {
+        const t = terminalRefs.current.get(leafId);
+        if (t) {
+          t.write(`${cmd.command}\r`);
+          t.focus();
+          return;
+        }
+      }
+      const tabId = newTab();
+      setTimeout(() => {
+        const tab = tabsRef.current.find((x) => x.id === tabId);
+        if (!tab || tab.kind !== "terminal") return;
+        const t = terminalRefs.current.get(tab.activeLeafId);
+        if (!t) return;
+        t.write(`${cmd.command}\r`);
+        t.focus();
+      }, 80);
+    },
+    [activeId, newTab],
+  );
+
   const handleOpenFile = useCallback(
     (path: string, pin?: boolean) => {
       // Explorer defaults to preview (pin=false); explicit actions like
@@ -913,7 +974,10 @@ export default function App() {
                         onOpenDiff={openGitDiffTab}
                       />
                     ) : sidebarView === "saved" ? (
-                      <SavedConnectionsView />
+                      <SavedConnectionsView
+                        onSshConnect={handleSshConnect}
+                        onRunCommand={handleRunCommand}
+                      />
                     ) : null}
                   </div>
                   <SidebarRail

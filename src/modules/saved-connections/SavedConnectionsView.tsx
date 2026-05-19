@@ -5,6 +5,8 @@ import {
   Edit02Icon,
   Delete02Icon,
   StarIcon,
+  ConnectIcon,
+  PlayCircleIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -33,7 +35,12 @@ import type { SshHost, FavoriteCommand } from "./types";
 
 type TabId = "ssh" | "commands";
 
-export function SavedConnectionsView() {
+type Props = {
+  onSshConnect?: (host: SshHost) => void;
+  onRunCommand?: (cmd: FavoriteCommand) => void;
+};
+
+export function SavedConnectionsView({ onSshConnect, onRunCommand }: Props) {
   const init = useSavedConnectionsStore((s) => s.init);
   const hydrated = useSavedConnectionsStore((s) => s.hydrated);
 
@@ -69,7 +76,11 @@ export function SavedConnectionsView() {
       </div>
 
       <ScrollArea className="flex-1">
-        {activeTab === "ssh" ? <SshHostsSection /> : <CommandsSection />}
+        {activeTab === "ssh" ? (
+          <SshHostsSection onConnect={onSshConnect} />
+        ) : (
+          <CommandsSection onRunCommand={onRunCommand} />
+        )}
       </ScrollArea>
     </div>
   );
@@ -103,7 +114,11 @@ function TabButton({
   );
 }
 
-function SshHostsSection() {
+function SshHostsSection({
+  onConnect,
+}: {
+  onConnect?: (host: SshHost) => void;
+}) {
   const hosts = useSavedConnectionsStore((s) => s.sshHosts);
   const removeSshHost = useSavedConnectionsStore((s) => s.removeSshHost);
   const toggleSshFavorite = useSavedConnectionsStore(
@@ -137,6 +152,7 @@ function SshHostsSection() {
           onEdit={setEditHost}
           onRemove={removeSshHost}
           onToggleFavorite={toggleSshFavorite}
+          onConnect={onConnect}
         />
       ))}
       <Button
@@ -168,11 +184,13 @@ function SshHostRow({
   onEdit,
   onRemove,
   onToggleFavorite,
+  onConnect,
 }: {
   host: SshHost;
   onEdit: (h: SshHost) => void;
   onRemove: (id: string) => void;
   onToggleFavorite: (id: string) => void;
+  onConnect?: (host: SshHost) => void;
 }) {
   return (
     <div className="group flex items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 transition-colors hover:border-border/60 hover:bg-accent/40">
@@ -198,11 +216,22 @@ function SshHostRow({
           {host.username}@{host.host}:{host.port}
         </div>
       </div>
-      <div className="flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100">
+      <div className="flex shrink-0 gap-0.5">
+        {onConnect && (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={() => onConnect(host)}
+            className="text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100"
+          >
+            <HugeiconsIcon icon={ConnectIcon} size={12} strokeWidth={2} />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon-xs"
           onClick={() => onEdit(host)}
+          className="opacity-0 group-hover:opacity-100"
         >
           <HugeiconsIcon icon={Edit02Icon} size={12} strokeWidth={2} />
         </Button>
@@ -210,6 +239,7 @@ function SshHostRow({
           variant="ghost"
           size="icon-xs"
           onClick={() => onRemove(host.id)}
+          className="opacity-0 group-hover:opacity-100"
         >
           <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={2} />
         </Button>
@@ -236,6 +266,7 @@ function SshHostDialog({
   const [username, setUsername] = useState("");
   const [authType, setAuthType] = useState<"key" | "password">("key");
   const [keyPath, setKeyPath] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -245,6 +276,7 @@ function SshHostDialog({
       setUsername(initial?.username ?? "");
       setAuthType(initial?.authType ?? "key");
       setKeyPath(initial?.keyPath ?? "");
+      setPassword(initial?.password ?? "");
     }
   }, [open, initial]);
 
@@ -257,6 +289,7 @@ function SshHostDialog({
       username: username.trim(),
       authType,
       keyPath: keyPath.trim(),
+      password,
       favorite: initial?.favorite ?? false,
     };
     if (initial) {
@@ -265,7 +298,7 @@ function SshHostDialog({
       addSshHost(data);
     }
     onOpenChange(false);
-  }, [name, host, port, username, authType, keyPath, initial, addSshHost, updateSshHost, onOpenChange]);
+  }, [name, host, port, username, authType, keyPath, password, initial, addSshHost, updateSshHost, onOpenChange]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -327,13 +360,23 @@ function SshHostDialog({
               </SelectContent>
             </Select>
           </div>
-          {authType === "key" && (
+          {authType === "key" ? (
             <div className="flex flex-col gap-1.5">
               <Label>Key Path</Label>
               <Input
                 placeholder="~/.ssh/id_ed25519"
                 value={keyPath}
                 onChange={(e) => setKeyPath(e.target.value)}
+              />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <Label>Password</Label>
+              <Input
+                type="password"
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
           )}
@@ -351,7 +394,11 @@ function SshHostDialog({
   );
 }
 
-function CommandsSection() {
+function CommandsSection({
+  onRunCommand,
+}: {
+  onRunCommand?: (cmd: FavoriteCommand) => void;
+}) {
   const cmds = useSavedConnectionsStore((s) => s.favoriteCommands);
   const removeCommand = useSavedConnectionsStore((s) => s.removeCommand);
   const toggleCommandFavorite = useSavedConnectionsStore(
@@ -385,6 +432,7 @@ function CommandsSection() {
           onEdit={setEditCmd}
           onRemove={removeCommand}
           onToggleFavorite={toggleCommandFavorite}
+          onRun={onRunCommand}
         />
       ))}
       <Button
@@ -416,11 +464,13 @@ function CommandRow({
   onEdit,
   onRemove,
   onToggleFavorite,
+  onRun,
 }: {
   cmd: FavoriteCommand;
   onEdit: (c: FavoriteCommand) => void;
   onRemove: (id: string) => void;
   onToggleFavorite: (id: string) => void;
+  onRun?: (cmd: FavoriteCommand) => void;
 }) {
   return (
     <div className="group flex items-center gap-2 rounded-lg border border-transparent px-2 py-1.5 transition-colors hover:border-border/60 hover:bg-accent/40">
@@ -446,11 +496,22 @@ function CommandRow({
           {cmd.command}
         </div>
       </div>
-      <div className="flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100">
+      <div className="flex shrink-0 gap-0.5">
+        {onRun && (
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={() => onRun(cmd)}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <HugeiconsIcon icon={PlayCircleIcon} size={12} strokeWidth={2} />
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon-xs"
           onClick={() => onEdit(cmd)}
+          className="opacity-0 group-hover:opacity-100"
         >
           <HugeiconsIcon icon={Edit02Icon} size={12} strokeWidth={2} />
         </Button>
@@ -458,6 +519,7 @@ function CommandRow({
           variant="ghost"
           size="icon-xs"
           onClick={() => onRemove(cmd.id)}
+          className="opacity-0 group-hover:opacity-100"
         >
           <HugeiconsIcon icon={Delete02Icon} size={12} strokeWidth={2} />
         </Button>

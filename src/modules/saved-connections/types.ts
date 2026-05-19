@@ -8,6 +8,7 @@ export type SshHost = {
   username: string;
   authType: SshAuthType;
   keyPath: string;
+  password: string;
   favorite: boolean;
 };
 
