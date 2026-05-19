@@ -1,7 +1,7 @@
 import {
-  native,
+  git,
   type GitDiffContentResult,
-} from "@/modules/ai/lib/native";
+} from "@/lib/git";
 import { currentWorkspaceScopeKey } from "@/modules/workspace";
 
 const DIFF_CACHE_LIMIT = 6;
@@ -65,8 +65,8 @@ export async function fetchWorkingDiff(
   if (cached) return cached;
   const pending = inflight.get(key);
   if (pending) return pending;
-  const p = native
-    .gitDiffContent(repoRoot, path, mode === "+", originalPath)
+  const p = git
+    .diffContent(repoRoot, path, mode === "+", originalPath)
     .then((res) => {
       touch(key, res);
       return res;
@@ -89,8 +89,8 @@ export async function fetchCommitDiff(
   if (cached) return cached;
   const pending = inflight.get(key);
   if (pending) return pending;
-  const p = native
-    .gitCommitFileDiff(repoRoot, sha, path, originalPath)
+  const p = git
+    .commitFileDiff(repoRoot, sha, path, originalPath)
     .then((res) => {
       touch(key, res);
       return res;

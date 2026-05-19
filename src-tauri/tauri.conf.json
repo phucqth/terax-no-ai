@@ -4,9 +4,9 @@
   "version": "0.6.6",
   "identifier": "app.crynta.terax",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm build",
+    "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist",
     "removeUnusedCommands": true
   },

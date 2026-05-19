@@ -10,6 +10,7 @@ import {
   FolderTreeIcon,
   GitForkIcon,
   PuzzleIcon,
+  ServerStack03Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { SidebarViewId } from "./types";
@@ -58,6 +59,12 @@ export function SidebarRail({
       id: "explorer",
       label: "Files",
       icon: FolderTreeIcon,
+    },
+    {
+      kind: "view",
+      id: "saved",
+      label: "Saved",
+      icon: ServerStack03Icon,
     },
     {
       kind: "view",
