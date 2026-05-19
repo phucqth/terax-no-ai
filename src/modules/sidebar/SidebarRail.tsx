@@ -9,7 +9,6 @@ import {
   FolderGitTwoIcon,
   FolderTreeIcon,
   GitForkIcon,
-  PuzzleIcon,
   ServerStack03Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -80,12 +79,6 @@ export function SidebarRail({
       icon: GitForkIcon,
       onTrigger: () => onOpenGitGraph?.(),
       disabled: !onOpenGitGraph,
-    },
-    {
-      kind: "view",
-      id: "extensions",
-      label: "Extensions",
-      icon: PuzzleIcon,
     },
     {
       kind: "action",

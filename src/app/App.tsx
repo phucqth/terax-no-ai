@@ -33,18 +33,17 @@ import {
 import { PreviewStack, type PreviewPaneHandle } from "@/modules/preview";
 import { openSettingsWindow } from "@/modules/settings/openSettingsWindow";
 import { usePreferencesStore } from "@/modules/settings/preferences";
-
+import { SavedConnectionsView } from "@/modules/saved-connections";
 import {
   ShortcutsDialog,
   useGlobalShortcuts,
   type ShortcutHandlers,
 } from "@/modules/shortcuts";
 import {
-  ExtensionsView,
   SidebarRail,
   type SidebarViewId,
 } from "@/modules/sidebar";
-import { SavedConnectionsView } from "@/modules/saved-connections";
+
 import {
   SourceControlPanel,
   useSourceControl,
@@ -113,7 +112,6 @@ function readSidebarView(): SidebarViewId {
     if (
       stored === "explorer" ||
       stored === "source-control" ||
-      stored === "extensions" ||
       stored === "saved"
     )
       return stored;
@@ -916,9 +914,7 @@ export default function App() {
                       />
                     ) : sidebarView === "saved" ? (
                       <SavedConnectionsView />
-                    ) : (
-                      <ExtensionsView />
-                    )}
+                    ) : null}
                   </div>
                   <SidebarRail
                     activeView={sidebarView}
